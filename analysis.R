@@ -1,7 +1,5 @@
 # Whitefly analysis.
 
-#setwd("C:/Users/faustorodriguez/Desktop")
-setwd("~/Desktop")
 source('bugcountGLM.R')
 
 # Start pdf output device for all subsequent plots
@@ -19,7 +17,7 @@ source('bugcountGLM.R')
 
 wf <- read.wf(file="WF_consolidated.tab", sep="\t",header=TRUE)
 
-# 2. Counts per Plant/leaf. ######################################
+# 2. Counts per Plant / per Leaf. ##############################################
 
 wf.leaf <- leaf.count(wf)
 summary(wf.leaf$nymphs)
@@ -28,6 +26,7 @@ wf.plant <- plant.count(wf)
 summary(wf.plant$nymphs)
 
 # Pick analysis level plant or leaf
+
 # wf.count <- wf.plant
 
 wf.count <- wf.leaf
@@ -103,7 +102,9 @@ for (cross in levels(wf.count$exp.cross)) {
 # **************************************************************************** #
 # 3.2 Checks.
 
-wf.check <- wf.count[grepl("check", wf.count$group) & wf.count$clone != "Secundina",]
+wf.check <- wf.count[grepl("check", wf.count$group) &
+                    wf.count$clone != "Secundina",]
+
 wf.check <- remove.levels(wf.check)
 names(wf.check)
 levels(wf.check$clone)
@@ -156,7 +157,7 @@ posthoc$infestation = factor(posthoc$infestation,
 posthoc$.group=gsub(" ", "", posthoc$.group)
 
 quartz()
-plot.gg.incfestationXclone(posthoc)
+plot.gg.infestationXclone(posthoc)
 
 
 quartz()

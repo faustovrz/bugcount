@@ -7,14 +7,14 @@ library(psych)
 library(lsmeans)
 library(multcomp)
 
-# WF counts per picture. Each picture must have a unique combination of
-# experiment + replicate + plant + pic
-# experiment description consists of:
-# exp.year + exp.cross + exp.propagation + exp.substrate
-# **************************************************************************** #
+# Compatibility of graphic device with windows OS.
 if(.Platform$OS.type=="windows") {
   quartz<-function() windows()
 }
+
+# Basic Function Initialization ################################################
+# Make vectors of descriptors from the expected column names of the whitefly
+# data frame
 
 exp.descriptor <- function(wf){
   if (any(!grepl("experiment",colnames(wf)))){
@@ -48,6 +48,19 @@ leaf.criteria <-function(wf){
   paste(c(exp.descriptor(wf),leaf.descriptor(wf)), collapse= " + ")
 }
 
+# Data Input     ##############################################################
+
+#' Read whitefly count table
+#' 
+#' @param file A filename for the whitefly counts per picture.
+#' @return Dataframe containing whitefly counts
+#' @details 
+#' Whitefly counts per picture. Each picture must have a unique combination of
+#' experiment + replicate + plant + pic
+#' experiment description consists of:
+#' exp.year + exp.cross + exp.propagation + exp.substrate
+#' @examples
+#' my.wf <- read.wf("whitefly_counts.tab")
 
 read.wf <- function(file,...){
   wf<- read.table(file="WF_consolidated.tab", sep="\t",header=TRUE)
@@ -59,10 +72,25 @@ read.wf <- function(file,...){
   # TODO: order columns with espriment at the beginning. new function?
 }
 
+#' Aggregate whitefly counts per leaf
+#' 
+#' @param wf A dataframe of whitefly count counts per picture.
+#' @return Dataframe containing whitefly counts per leaf
+#' @details 
+#' @examples
+#' per.leaf <- leaf.count(my.wf)
+
 leaf.count <- function(wf){
  aggregate(as.formula(paste ("nymphs ~ ",  leaf.criteria(wf)) ), 
                        data = wf, FUN=sum, na.rm=TRUE)
 } 
+
+#' Aggregate whitefly counts per plant
+#' 
+#' @param wf A dataframe of whitefly counts per picture
+#' @return Dataframe containing whitefly counts per plant
+#' @examples
+#' per.plant <- plant.count(my.wf)
 
 plant.count <- function(wf){
   
@@ -74,7 +102,6 @@ plant.count <- function(wf){
   wf.plant$nleaf <- wf.nleaf$leaf
   wf.plant[wf.plant$nleaf>1,]
 }
-
 
 
 #' Geometric mean of a vector ignoring NAs.
@@ -89,44 +116,36 @@ geometric.mean = function(x, na.rm=TRUE){
   exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
 }
 
-
-#' Equivalent to `MASS::fitdistr(x, densfun = "gamma")`, where x are first rescaled to 
-#' the appropriate scale for a gamma distribution. Useful for fitting the gamma distribution to 
-#' data which, when multiplied by a constant, follows this distribution
-#' @param x A vector.
-#' @return MASS::fitdistr with scaling multiplier
-#'
-#' @examples
-#' fitgamma(1:1000)
-
-fitgamma <- function(x) {
-  if (!requireNamespace("MASS")) stop("Requires MASS package.")
-  
-  fit <- glm(formula = x ~ 1, family = Gamma)
-  out <- MASS::fitdistr(x * coef(fit), "gamma")
-  out$scaling_multiplier <- unname(coef(fit))
-  out
+# fix aggregate column names
+fix.ag.colnames <- function (ag){
+  do.call(cbind.data.frame,ag)
 }
 
+
+#' Remove levels form factors of subsetted dataframes
+#' 
+#' @param df A dataframe
+#' @return Dataframe with excess levels removed from factors
+#' @examples
+#' wf.2000 <- remove.levels(plant.count[plant.count$year = 2000, ]
 
 remove.levels <-function(df){
   df[] <- lapply(df, function(x) if(is.factor(x)) factor(x) else x)
   df
 } 
 
-#' wf.aggregate
+#' Aggregate whitefly data by single criterion
 #' @param wf A whitefly count dataframe.
 #' @param x criterion column for aggregation.
 #' @param y variable column for aggregation.
-#' @param by.stat column for aggregation.
-#' @param ascending sort order.
+#' @param by.stat column for ordering levels for graphs.
 #' @return Dataframe of aggregates by specified {col} 
-#'         counts ordered by \code{by.stat}
+#'         values and levels ordered by \code{by.stat}
 #'
 #' @examples
-#' fitgamma(1:1000)
+#' wf.aggregate(my.wf,x="clone", y="nymphs", by.stat ="geometric.mean" )
 
-wf.aggregate <- function (wf,x="clone", y="nymphs", by.stat ="mean", ascending= TRUE){
+wf.aggregate <- function (wf,x="clone", y="nymphs", by.stat ="mean"){
   form <- formula(paste(y,x, sep = " ~ "))
   wf.ag <- aggregate(form, data=wf,
                       FUN=function(x) c(n = length(x),
@@ -145,6 +164,34 @@ wf.aggregate <- function (wf,x="clone", y="nymphs", by.stat ="mean", ascending= 
   wf.ag
 }
 
+
+# Distribution fit #############################################################
+
+#' Equivalent to `MASS::fitdistr(x, densfun = "gamma")`, where x are first
+#' rescaled to the appropriate scale for a gamma distribution.
+#' Useful for fitting the gamma distribution to 
+#' data which, when multiplied by a constant, follows this distribution
+#' @param x A vector.
+#' @return MASS::fitdistr with scaling multiplier
+#'
+#' @examples
+#' fitgamma(1:1000)
+
+fitgamma <- function(x) {
+  if (!requireNamespace("MASS")) stop("Requires MASS package.")
+  fit <- glm(formula = x ~ 1, family = Gamma)
+  out <- MASS::fitdistr(x * coef(fit), "gamma")
+  out$scaling_multiplier <- unname(coef(fit))
+  out
+}
+
+#' Fit different distributions to count data
+#' @param wf A whitefly count dataframe.
+#' @return List of distribution parameters for diferent fits.
+#'         and histogram data for plotting.
+#'
+#' @examples
+#' fit.list <- count.fit(plant.count)
 
 count.fit <- function(wf){
   poisson <- fitdistr(wf$nymphs, "Poisson")
@@ -172,6 +219,13 @@ count.fit <- function(wf){
   )
 }
 
+#' Plot Probability Density over histogram to appreciate fit
+#' @param x A \code{count.fit()} list
+#' @return Plot.
+#'
+#' @examples
+#' plot.count.fit(count.fit(wf.per.leaf))
+
 
 plot.count.fit <- function(x,...){
   plot(x$hist, xlab = "Nypmh Count",...)
@@ -187,8 +241,10 @@ plot.count.fit <- function(x,...){
   # logspline aproximation, not good.
   # lines(wf.hist$mids,max(wf.hist$counts)*logspline.d/max(logspline.d))
   
-  legend("topright",legend=factor(c("Negative Binomial", "Lognormal","Poisson","Normal"),
-                                  levels = c("Negative Binomial","Lognormal", "Poisson","Normal")),
+  legend("topright",legend=factor(c("Negative Binomial", "Lognormal",
+                                    "Poisson","Normal"),
+                                  levels = c("Negative Binomial","Lognormal",
+                                             "Poisson","Normal")),
          title = "Model Aproximation",
          col= gg_color_hue(4), lwd = 2, lty=1:4, bty ="n")
   
@@ -219,9 +275,17 @@ plot.count.fit <- function(x,...){
   recordPlot()
 }
 
+# Negative Binomial GLM fit ####################################################
+
+#' Fit MASS Negative binomial General Linear Model for whitefly counts
+#' @param formula formula object specifiying the GLM
+#' @param wf A whitefly count dataframe. 
+#' @return List with model fit, lsmeans and posthoc groups
+#'
+#' @examples
+#' fit.nb.glm(nymphs ~ year + leaf, wf.per.leaf)
 
 fit.nb.glm <-function(formula,wf){
-  # assign("data",wf, .GlobalEnv) # Nasty!!! Ruins the scope!
   # TODO: validate formula for one predictor only
   response <- as.character(terms(formula)[[2]])
   predictor <- as.character(terms(formula)[[3]])
@@ -241,6 +305,17 @@ fit.nb.glm <-function(formula,wf){
         )
 }
 
+#' Plot negative binomial model fit
+#' @param wf A whitefly count dataframe.
+#' @param np.fitted a \code{fit.nb.glm()} list.
+#' @param type \code{"CI"} Confidence interval dotplot
+#'             \code{"density"} probability density joyplot
+#' @return Nothing
+#'
+#' @examples
+#' plot.fit.nb.glm(wf.per.leaf,
+#'                 fit.nb.glm(nymphs ~ year + leaf, wf.per.leaf),
+#'                 type = "density")
 
 plot.fit.nb.glm <- function(wf, nb.fitted, type = "CI", xmax =15000){
   group <- nb.fitted$group
@@ -260,13 +335,22 @@ plot.fit.nb.glm <- function(wf, nb.fitted, type = "CI", xmax =15000){
     
     # change factor for joyplot to appear in the same order as posthoc plot
     wf[,predictor] <- factor(wf[,predictor], levels = order)
-    ggplot(wf, aes_string(x = response, y = predictor, fill = predictor))  + xlim(0, xmax) +
+    ggplot(wf, aes_string(x = response, y = predictor, fill = predictor)) +
+       xlim(0, xmax) +
        ggtitle("Density") + geom_joy() + 
        scale_fill_manual(values = grp.col) +
        theme(legend.position="none")
     
   }# TODO: else{stop("")}
 }
+
+
+#' Plot infestation X clone interaction as boxplot
+#' @param wf A whitefly count dataframe.
+#' @return Nothing
+#'
+#' @examples
+#' plot.infestationXclone(wf.per.leaf)
 
 plot.infestationXclone <-function(wf){
   # TODO:  validate that infestation is a column of wf
@@ -302,7 +386,15 @@ plot.infestationXclone <-function(wf){
          fill=c("grey", "white"))
 }
 
-plot.gg.incfestationXclone<-function(cld){
+#' Plot infestation X clone from GLM
+#' @param cld \code{multcomp} common letter display \code{cld} object from
+#'        posthoc comparison in \code{plot.fit.nb.glm()}
+#' @return Nothing
+#'
+#' @examples
+#' plot.gg.infestationXclone(nb.glm.fit$posthoc)
+
+plot.gg.infestationXclone<-function(cld){
   title <- "Interaction: Infestation Regime x Clone"
   subtitle <- "(GLM Arithmetic Means + 95% Confidence Interval)"
 
@@ -330,7 +422,17 @@ plot.gg.incfestationXclone<-function(cld){
     ggtitle(paste(title,subtitle, sep = "\n"))
 }
 
+# Efficacy calculations ########################################################
 
+#' Vertical to horizontal data reformatting and aggregation for whitefly counts
+#' just a wrapper for \code{dcast} from \code{reshape2}
+#' @param formula formula object specifiying the \code{dcast} reformatting
+#' @param wf A whitefly count dataframe.
+#' @param fun function for aggregation deafult \code{geometric.mean}
+#' @return A wide formated dataframe
+#'
+#' @examples
+#' clone.means <- wf.wide(nymphs ~ clone,fun = mean)
 
 wf.wide <- function(formula, wf, fun = geometric.mean){
   dcast(wf,formula,
@@ -345,8 +447,18 @@ wf.wide <- function(formula, wf, fun = geometric.mean){
 # }
 
 
+#' Efficacy calculations as ratio of count means, geometric means, or medians
+#' @param wf A whitefly count dataframe.
+#' @param control Control genotype string.
+#'        Genotype Denominator in efficacy: e = u1/u0.
+#' @return A dataframe with efficacy calculated per clone
+#'
+#' @examples
+#' efficacy.df <- efficacy.aggregate(wf.per.plant ~ control = "COL1468")
+
 efficacy.aggregate<- function (wf, control = "COL1468"){
   wf <-wf.count
+  # This formula describes experimenl design
   form <- formula(nymphs ~ exp.cross + experiment + clone + group)
   wf.ag <- aggregate(form, data=wf,
                      FUN=function(x) c(n = length(x),
@@ -385,6 +497,15 @@ efficacy.aggregate<- function (wf, control = "COL1468"){
   wf.merge
 }
 
+#' Vertical to horizontal data reformatting for efficacy calculations
+#' just a wrapper for \code{dcast} from \code{reshape2}
+#' @param ef efficacy dataframe from \code{efficacy.aggregate()} 
+#' @return List of wide formated dataframes of efficacy by mean,
+#'         geometric mean median
+#'
+#' @examples
+#' ef.by.measure <- efficacy.list(efficacy.df)
+
 efficacy.list <- function(ef){
 list(mean = dcast(ef,clone ~ experiment,value.var = "mean.eff"),
      geometric.mean = dcast(ef,clone ~ experiment,value.var = "geometric.mean.eff"))
@@ -392,6 +513,15 @@ list(mean = dcast(ef,clone ~ experiment,value.var = "mean.eff"),
 
 }
 
+
+#' Plot of efficacy probability density
+#' just a wrapper for \code{dcast} from \code{reshape2}
+#' @param ef efficacy dataframe from \code{efficacy.aggregate()} 
+#' @return List of wide formated dataframes of  efficacy by mean,
+#'         geometric mean, median by clone for each experiment
+#'
+#' @examples
+#' ef.by.measure <- efficacy.list(efficacy.df)
 
 plot.ef.density <-function(ef,type, group){
   n.group <- length(unique(ef[,group]))
@@ -406,15 +536,22 @@ plot.ef.density <-function(ef,type, group){
     xlab("Efficacy")  
 }
 
-# fix aggregate column names
-fix.ag.colnames <- function (ag){
-  do.call(cbind.data.frame,ag)
-}
+#' Emulate ggplot color palette.
+#' @param n number of colors to generate
+#' @return vector of hexadecimal color strings
+#'
+#' @examples
+#' gg_color_hue(length(levels(wf$clone)))
 
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
+
+
+# Correlation Analysis, reproducibility ########################################
+
+#' Correlation panel for use un correlation matrix
 
 panel.hist <- function(x, ...)
 { usr <- par("usr"); on.exit(par(usr))
@@ -425,10 +562,14 @@ panel.hist <- function(x, ...)
   rect(breaks[-nB], 0, breaks[-1], y, col="cyan", ...)
 }
 
+#' Correlation panel for use un correlation matrix
+
 panel.points <- function(x,y){
   points(x,y)
   abline(stats::lm(y ~ x), col = "red")
 }
+
+#' Correlation panel for use un correlation matrix
 
 panel.cor <- function(x, y, digits=2, prefix="")
 {
@@ -449,6 +590,14 @@ panel.cor <- function(x, y, digits=2, prefix="")
   text(.65, .6, Signif, cex = cex , col = "darkgrey", pos= 4)
 }
 
+#' Plot wide formated dataframe correlations per clone
+#' in log scale
+#' @param wf.wide wide formatted data by clone
+#' @return \code{pairs} plot of correlation
+#'
+#' @examples
+#' plot.wide.cor(efficacy.list(ef)$mean)
+
 plot.wide.cor<-function(wf.wide, main = "Correlation", ...){
   pairs(log10(wf.wide[,-1]),
         lower.panel = panel.points,
@@ -457,6 +606,16 @@ plot.wide.cor<-function(wf.wide, main = "Correlation", ...){
         main = main)
 }
 
+#' Plot wide formated dataframe correlations per clone
+#' with point labels, asumes plotted points to be ~ 10
+#' more points would be extremely unreadable
+#' @param check.wide wide formatted data by clone for checks only
+#' @param main plot title 
+#' @return \code{pairs} plot of correlation
+#'
+#' @examples
+#' plot.check.cor(eplot.check.cor)
+#' 
 plot.check.cor <-function(check.wide,
                           main = "Correlation",
                           ...){
@@ -472,6 +631,14 @@ plot.check.cor <-function(check.wide,
         )
 }
 
+#' Plot wide formated dataframe correlations per clone
+#' in arc sine scale
+#' @param ef.par wide formatted data by clone
+#' @param main plot title  
+#' @return \code{pairs} plot of correlation
+#'
+#' @examples
+#' plot.wide.cor(efficacy.list(ef)$mean)
 
 plot.ef.cor<-function(ef.par, main = "Correlation", ...){
   pairs(asin(ef.par[,-1]),
