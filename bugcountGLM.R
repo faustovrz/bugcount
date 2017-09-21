@@ -422,6 +422,76 @@ plot.gg.infestationXclone<-function(cld){
     ggtitle(paste(title,subtitle, sep = "\n"))
 }
 
+
+plot.cross.anova <- function(posthoc, exp.allowed){
+  
+  ### Order the levels for printing
+  
+  clone.order <- posthoc$clone
+  posthoc$clone <- factor(posthoc$clone,
+                          levels=clone.order)
+  ###  Remove spaces in .group  
+  
+  posthoc$.group=gsub(" ", "", posthoc$.group)
+  posthoc.str <- paste("posthoc groups :", length(unique(posthoc$.group)))
+  
+  print(ggplot(posthoc,
+               aes(x     = clone,
+                   y     = lsmean,
+                   color = .group,
+                   label = .group),
+               log10="y") +
+          geom_point(shape  = 15,
+                     size   = 4) +
+          geom_errorbar(aes(ymin  =  lower.CL,
+                            ymax  =  upper.CL),
+                        width =  0.2,
+                        size  =  0.7) +
+          theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),
+                legend.position="none") +
+          ggtitle(paste(c(exp.allowed,
+                          posthoc.str,
+                          "ANOVA, Mean + 95% Confidence Interval"),
+                        collapse ="\n")))
+}
+
+
+
+plot.cross.nb.fit <- function(posthoc, exp.allowed){
+  
+  ### Order the levels for printing
+  clone.order <- posthoc$clone
+  posthoc$clone <- factor(posthoc$clone,
+                          levels=clone.order)
+  
+  ###  Remove spaces in .group  
+  
+  posthoc$.group=gsub(" ", "", posthoc$.group)
+  
+  posthoc.str <- paste("posthoc groups :", length(unique(posthoc$.group)))
+  
+  print(ggplot(posthoc,
+               aes(x     = clone,
+                   y     = response,
+                   color = .group,
+                   label = .group),
+               log10="y") +
+          geom_point(shape  = 15,
+                     size   = 4) +
+          geom_errorbar(aes(ymin  =  asymp.LCL, 
+                            ymax  =  asymp.UCL),
+                        width =  0.2,
+                        size  =  0.7) +
+          theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),
+                legend.position="none") +
+          scale_y_continuous(trans=log10_trans(),limits = c(0.001,100000)) +
+          ggtitle(paste(c(exp.allowed,
+                          posthoc.str,
+                          "Negative Binomial GLM, Mean + 95% Confidence Interval"),
+                        collapse ="\n")))
+}
+
+
 # Efficacy calculations ########################################################
 
 #' Vertical to horizontal data reformatting and aggregation for whitefly counts
@@ -642,7 +712,7 @@ plot.check.cor <-function(check.wide,
 
 plot.ef.cor<-function(ef.par, main = "Correlation", ...){
   pairs(asin(ef.par[,-1]),
-        lower.panel = points.panel,
+        lower.panel = panel.points,
         diag.panel = panel.hist,
         upper.panel = panel.cor,
         main = main)
