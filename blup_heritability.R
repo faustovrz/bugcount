@@ -91,7 +91,7 @@ for (idx in 1:length(dataset)){
   pdf(file = pdf.file)
   cat(paste("\n", dataset.str, strrep("<",60), "\n\n"))
   
-  # Negative Binomial GLM ######################################################
+  # Negative Binomial GLM with random effects  #################################
   
   nb.model<- glmer.nb(nymphs ~ (1|experiment) + (1|clone) +
                                       (1|experiment:clone),
