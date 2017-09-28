@@ -1,9 +1,12 @@
+library(stringr)
 library(car)
 library(MASS)
 library(ggjoy)
 library(scales) 
 library(reshape2)
 library(psych)
+library(lme4)
+library(DHARMa)
 library(lsmeans)
 library(multcomp)
 
@@ -491,6 +494,36 @@ plot.cross.nb.fit <- function(posthoc, exp.allowed){
                         collapse ="\n")))
 }
 
+
+# Variance decomposition, Heritability, BLUP ###################################
+clone.exp <- function(clone,wf){
+  wf.exp <- unique(wf[,c("clone","experiment")])
+  sort(as.vector(wf.exp$experiment[wf.exp$clone==clone]))
+}
+
+cross.exp <- function(cross,wf){
+  wf.exp <- unique(wf[,c("exp.cross","experiment")])
+  sort(as.vector(wf.exp$experiment[wf.exp$exp.cross==cross]))
+}
+
+
+select.complete.clones <- function(wf) {
+  clones <- unique(as.character(wf$clone))
+  experiments <- unique(as.character(wf$experiment))
+  complete <- c()
+  for ( cross in unique(as.character(wf$exp.cross)) ) {
+    complete.exp <- grep(cross, experiments, value = TRUE)
+    
+    if(length(complete.exp) >0){
+      check.complete <- unlist(lapply(clones, 
+                                      FUN = function(x){
+                                        all( complete.exp %in% clone.exp(x, wf))
+                                      }))
+      complete <- unique(c(complete, clones[check.complete]))
+    }
+  }
+  sort(complete)
+}
 
 # Efficacy calculations ########################################################
 

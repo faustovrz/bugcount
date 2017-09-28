@@ -27,7 +27,7 @@ if(is.na(args[3])) {
 
 pdf.file <- args[2]
 
-pdf(pdf.file, onefile=TRUE)
+# pdf(pdf.file, onefile=TRUE)
 
 # 1. Read WF count data. #######################################################
 #
@@ -297,7 +297,7 @@ plot.ef.cor(ef.gmean,main = paste(cross,"/",control,cor.title))
 
 }
 
-graphics.off()
+# graphics.off()
 
 # 5. Sample size calculations #################################################
 
