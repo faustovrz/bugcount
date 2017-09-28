@@ -3,5 +3,5 @@
 .RData
 .Ruserdata
 *.pdf
-wf_consolidated.tab
+*.tab
 reslults/*

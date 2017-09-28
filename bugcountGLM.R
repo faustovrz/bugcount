@@ -452,6 +452,8 @@ plot.cross.anova <- function(posthoc, exp.allowed){
                         size  =  0.7) +
           theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),
                 legend.position="none") +
+          # TODO: Calculate interval (min, max)
+          # scale_y_continuous(limits = c(-1000,6000)) +  
           ggtitle(paste(c(exp.allowed,
                           posthoc.str,
                           "ANOVA, Mean + 95% Confidence Interval"),

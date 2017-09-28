@@ -9,7 +9,7 @@ source('bugcountGLM.R')
 args <- commandArgs(TRUE)
 
 if (is.na(args[1])) {
-  args[1] <- 'WF_consolidated.tab'
+  args[1] <- 'leaf'
 }
 
 wf.file <- args[1]
@@ -21,7 +21,7 @@ if(is.na(args[2])) {
 }
 
 if(is.na(args[3])) {
-  args[3] <- 'leaf'
+  args[3] <- 'WF_consolidated.tab'
 }
 
 wf.leaf <- leaf.count(wf)
@@ -32,9 +32,9 @@ summary(wf.plant$nymphs)
 # args[3] <- "plant"
 
 # Pick analysis level plant or leaf
-if(args[3]=="plant"){
+if(args[1]=="plant"){
   wf.count <- wf.plant
-} else if (args[3]=="leaf"){
+} else if (args[1]=="leaf"){
   wf.count <- wf.leaf
 }
 
@@ -86,12 +86,12 @@ for (idx in 1:length(dataset)){
   # Initialize output per dataset ##############################################
 
   dataset.str <- paste("dataset", idx, sep = "")
-  prefix <- paste(args[3],args[2],dataset.str, sep = "_")
+  prefix <- paste(args[1],args[2],dataset.str, sep = "_")
   pdf.file <- paste(prefix,"pdf",sep = ".")
   pdf(file = pdf.file)
   cat(paste("\n", dataset.str, strrep("<",60), "\n\n"))
   
-  # Negative Binomial GLM ######################################################
+  # Negative Binomial GLM with random effects  #################################
   
   nb.model<- glmer.nb(nymphs ~ (1|experiment) + (1|clone) +
                                       (1|experiment:clone),

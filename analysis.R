@@ -9,15 +9,15 @@ source('bugcountGLM.R')
 args <- commandArgs(TRUE)
 
 if (is.na(args[1])) {
-  args[1] <- 'WF_consolidated.tab'
+  args[1] <- 'leaf'
 }
 
 if(is.na(args[2])) {
-    args[2] <- 'resistance_analysis.pdf'
+    args[2] <- 'resistance_analysis'
 }
 
 if(is.na(args[3])) {
-  args[3] <- 'leaf'
+  args[3] <- 'WF_consolidated.tab'
 }
 
 
@@ -25,9 +25,9 @@ if(is.na(args[3])) {
 
 # Start pdf output device for all subsequent plots
 
-pdf.file <- args[2]
+prefix <- paste(args[1],args[2], sep = "_")
 
-# pdf(pdf.file, onefile=TRUE)
+pdf(paste(prefix,"pdf", sep = "."), onefile=TRUE)
 
 # 1. Read WF count data. #######################################################
 #
@@ -37,7 +37,7 @@ pdf.file <- args[2]
 # exp.year + exp.cross + exp.propagation + exp.substrate
 # **************************************************************************** #
 
-wf.file <- args[1]
+wf.file <- args[3]
 
 wf <- read.wf(file=wf.file, sep="\t",header=TRUE)
 
@@ -50,11 +50,13 @@ wf.plant <- plant.count(wf)
 summary(wf.plant$nymphs)
 
 # Pick analysis level plant or leaf
-if(args[3]=="plant"){
+if(args[1]=="plant"){
 wf.count <- wf.plant
-} else if (args[3]=="leaf"){
+} else if (args[1]=="leaf"){
 wf.count <- wf.leaf
 }
+
+# Leave infestation check out?
 
 # **************************************************************************** #
 #
@@ -127,7 +129,9 @@ for (cross in levels(wf.count$exp.cross)) {
 # **************************************************************************** #
 # 3.2 Checks.
 
-wf.check <- wf.count[grepl("check", wf.count$group) &
+# Leave infestation check out?
+# wf.check <- wf.count[grepl("check", wf.count$group) &
+wf.check <- wf.count[grepl("internal_check", wf.count$group) &
                     wf.count$clone != "Secundina",]
 
 wf.check <- remove.levels(wf.check)
@@ -297,7 +301,7 @@ plot.ef.cor(ef.gmean,main = paste(cross,"/",control,cor.title))
 
 }
 
-# graphics.off()
+graphics.off()
 
 # 5. Sample size calculations #################################################
 

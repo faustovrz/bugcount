@@ -2,20 +2,12 @@
 
 ----
 ## Usage
-### Analysis by leaf insect count
-    Rscript analysis.R WF_consolidated.tab \
-                      leaf_resistance_analysis.pdf \
-                      leaf;
-                      
-    Rscript blup_heritability.R WF_consolidated.tab\
-            blup_analysis \
-            leaf;
-
 ### Analysis by plant insect count
-    Rscript analysis.R WF_consolidated.tab \
-                      plant_resistance_analysis.pdf \
-                      plant;
-                      
-    Rscript blup_heritability.R WF_consolidated.tab\
-            blup_analysis \
-            plant;
+    Rscript analysis.R  plant resistance_analysis WF_consolidated.tab
+    
+    Rscript blup_heritability.R plant blup_analysis WF_consolidated.tab
+
+### Analysis by leaf insect count
+    Rscript analysis.R leaf resistance_analysis WF_consolidated.tab
+    
+    Rscript blup_heritability.R leaf blup_analysis WF_consolidated.tab
