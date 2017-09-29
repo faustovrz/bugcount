@@ -1,4 +1,6 @@
-#!/usr/local/bin/Rscript
+#!/usr/local/bin/Rscript --verbose
+cat(as.character(Sys.time()),"\n\n")
+
 source('bugcountGLM.R')
 
 # Parse command line arguments #################################################
