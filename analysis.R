@@ -4,7 +4,7 @@ source('bugcountGLM.R')
 # Parse command line arguments #################################################
 
 # Usage:
-# Rscript anlysis.R WF_consolidated.tab resistance_analysis.pdf leaf
+# Rscript anlysis.R wf_consolidated.tab resistance_analysis.pdf leaf
 
 args <- commandArgs(TRUE)
 
@@ -17,7 +17,7 @@ if(is.na(args[2])) {
 }
 
 if(is.na(args[3])) {
-  args[3] <- 'WF_consolidated.tab'
+  args[3] <- 'wf_consolidated.tab'
 }
 
 
