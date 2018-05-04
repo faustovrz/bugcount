@@ -65,8 +65,15 @@ wf_check$infestation <- factor(wf_check$infestation, levels =c("low","high"))
 
 
 ### Correlation  between experiments
+What indicator should we use as resistance phenotype?
+Nymph counts are not normal 
+Error is not distributed normally.
+Nymph counts do not meet linear model assumptions (ANOVA, MapQTL).
+Best fit is a negative Binomial Distribution
 
 ```{r, fig.asp=1}
+cor_title <- paste("Geometric Means R2","Log Scale", sep = "\n")
+
 check_by_exp <- wf_wide(clone ~ experiment, wf_check, 
                         fun = function(x) log10(geometric_mean(x)) )
 plot_check_cor(check_by_exp, main = paste("Checks", cor_title))
@@ -103,11 +110,6 @@ plot_gg_infestationXclone(posthoc)
 ```
 
 
-What indicator should we use as resistance phenotype?
-Nymph counts are not normal 
-Error is not distributed normally.
-Nymph counts do not meet linear model assumptions (ANOVA, MapQTL).
-Best fit is a negative Binomial Distribution
 
 ## Whole population.
 
@@ -141,7 +143,6 @@ wf_count$infestation <- factor(wf_count$infestation, levels =c("low","high"))
 
 ```{r, fig.asp=1}
 
-cor_title <- paste("Geometric Means Correlation","Log Scale", sep = "\n")
 
 for (cross in levels(wf_count$exp_cross)) {
   
