@@ -10,10 +10,7 @@ output:
 ---
 
 ```{r}
-#library(soilP)
-library(here)
-library(devtools)
-load_all("./")
+library(bugcount)
 data_dir <- file.path(system.file(package = "bugcount"),"extdata")
 
 ```

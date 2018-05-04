@@ -13,6 +13,8 @@ Imports:
     car,
     MASS,
     ggjoy,
+    ggpubr,
+    cowplot,
     scales, 
     reshape2,
     psych,
