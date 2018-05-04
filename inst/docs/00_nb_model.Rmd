@@ -1,0 +1,197 @@
+---
+title: "Bug Count Analysis"
+output:
+  html_notebook:
+    highlight: tango
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+    toc_float: yes
+---
+
+```{r}
+#library(soilP)
+library(here)
+library(devtools)
+load_all("./")
+data_dir <- file.path(system.file(package = "bugcount"),"extdata")
+
+```
+
+# Whitefly analysis.
+## Read WF count data. 
+WF counts per picture. Each picture must have a unique combination of  
+experiment + replicate + plant + pic  
+experiment description consists of:  
+exp_year + exp_cross + exp_propagation + exp_substrate  
+
+
+```{r}
+wf_file <- file.path(data_dir, "wf_consolidated.tab")
+wf <- read_wf(file = wf_file, sep = "\t",header=TRUE)
+```
+## Counts per Plant  
+
+```{r}
+
+wf_count <- plant_count(wf)
+summary(wf_count$nymphs)
+
+```
+
+What indicator should we use as resistance phenotype?
+Nymph counts are not normal 
+Error is not distributed normally.
+Nymph counts do not meet linear model assumptions (ANOVA, MapQTL).
+Best fit is a negative Binomial Distribution
+
+## Probability density model fit to actual distribution
+```{r, warning=FALSE}
+wf_count_fit <-  count_fit(wf_count)
+
+plot_count_fit(wf_count_fit, main = "Nymphs")
+```
+
+## Reproducibility 
+
+Assume that nymphs per plant are distributed as negative binomial
+
+### Whole population.
+nymphs ~ experiment GLM, posthoc and common letter difference 
+
+```{r}
+by_experiment <- fit_nb_glm(nymphs ~ experiment, wf_count)
+
+```
+
+```{r}
+plot_fit_nb_glm(wf_count,by_experiment, type = "violin", cld = FALSE)
+```
+add infestation regime as factor 
+high,low: inferred from nyphs ~ experiment GLM
+
+```{r}
+wf_count$infestation <- "low"
+wf_count[wf_count$exp_year > 2016,]$infestation <- "high"
+wf_count$infestation <- factor(wf_count$infestation, levels =c("low","high"))
+```
+
+## Correlation  between experiments 
+
+```{r, fig.asp=1}
+
+cor_title <- paste("Geometric Means Correlation","Log Scale", sep = "\n")
+
+for (cross in levels(wf_count$exp_cross)) {
+  
+  wf_by_exp <- wf_wide(clone ~ experiment,
+                       wf_count[wf_count$exp_cross == cross,])
+  
+  plot_wide_cor(wf_by_exp, main = paste(cross,cor_title))
+  
+}
+```
+
+## Checks.
+```{r, warning=FALSE}
+wf_check <- wf_count[grepl("internal_check", wf_count$group) &
+                       wf_count$clone != "Secundina",]
+
+wf_check <- remove_levels(wf_check)
+
+checks_count_fit <-  count_fit(wf_check)
+
+plot_count_fit(checks_count_fit, main = "Nymphs")
+```
+
+
+### Correlation  between experiments
+
+```{r, fig.asp=1}
+check_by_exp <- wf_wide(clone ~ experiment, wf_check, 
+                        fun = function(x) log10(geometric_mean(x)) )
+plot_check_cor(check_by_exp, main = paste("Checks", cor_title))
+```
+
+
+```{r}
+# nymphs ~ clone GLM posthoc and common letter difference
+fit <- fit_nb_glm(nymphs ~ clone, wf_check)
+plot_fit_nb_glm(wf_check,fit,type = "violin", xmax = 10000)
+```
+
+```{r, fig.asp=0.5}
+fit <- MASS::glm.nb(nymphs ~  infestation * clone, data = wf_check)
+posthoc <- lsmeans::cld(lsmeans::lsmeans(fit, ~ infestation * clone,
+                                adjust = "tuckey"), type = "response")
+# Plot post hoc
+
+### Order the levels for printing
+clone_order <- wf_aggregate(wf_check, by_stat = "mean")["clone"]
+
+posthoc$clone <- factor(posthoc$clone, levels = clone_order$clone)
+
+posthoc$infestation = factor(posthoc$infestation,
+                   levels=c("low", "high"))
+
+###  Remove spaces in .group  
+
+posthoc$.group=gsub(" ", "", posthoc$.group)
+
+# quartz()
+plot_gg_infestationXclone(posthoc)
+```
+
+
+
+# Nymph counts by Cross 
+```{r, fig.asp=1}
+exp_levels <- levels(as.factor(wf_count$experiment))
+exp_grp <- list(CM8996 = list(1,2,4,5),
+                GM8586 = list(3,6,7))
+plot_list <- list()
+for (cross in levels(wf_count$exp_cross)) {
+  for (idx in 1:length(exp_grp[[cross]])) {
+  exp_allowed <- exp_levels[exp_grp[[cross]][[idx]]]
+  
+  wf_by_cross <- wf_count[wf_count$exp_cross == cross &
+                            wf_count$experiment %in% exp_allowed,]
+  exp_count <- aggregate(experiment ~ clone ,wf_by_cross,
+                         FUN = function(x) length(unique(x)))
+  selected_clones <- with(exp_count, {
+    clone[experiment == length(exp_allowed)]
+  })
+  
+  wf_by_cross <- wf_by_cross[ wf_by_cross$clone %in% selected_clones,]
+  wf_by_cross <- (wf_by_cross)
+  
+  wf_by_cross$nymphs <- wf_by_cross$nymphs+1
+  # GLM ************************************************************ #
+  # Assuming Negative Binomial distribution
+  #
+  
+  fit_nb <- MASS::glm.nb(nymphs ~  clone, data = wf_by_cross)
+  AIC(fit_nb)
+
+  posthoc <- lsmeans::cld(
+  lsmeans::lsmeans(
+     fit_nb, ~ clone, adjust = "tuckey"),type = "response"
+  )
+  
+  # Plot post hoc
+  breaks <- posthoc$clone[!grepl("GM|CM", posthoc$clone, perl = TRUE)]
+  
+  plot_list[[paste(exp_allowed)]] <- plot_cross_nb_fit(posthoc,
+                                                       exp_allowed,
+                                                       breaks = breaks)
+  
+  }
+}
+ggplot2::theme_set(ggplot2::theme_gray(base_size = 10))
+ordered_list <- c(plot_list[1],list(empty = NULL),plot_list[c(3,7,2,5,4,6)])
+names(plot_list)
+names(ordered_list)
+cowplot::plot_grid(plotlist = ordered_list,
+          ncol = 2, nrow = 4, align = "v")
+
+```
