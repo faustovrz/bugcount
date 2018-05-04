@@ -7,6 +7,7 @@
 #'
 #' @examples
 #' # clone.means <- wf.wide(nymphs ~ clone,fun = mean)
+#' @export
 
 wf_wide <- function(formula, wf, fun = geometric_mean){
   reshape2::dcast(wf,formula,

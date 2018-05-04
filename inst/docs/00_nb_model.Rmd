@@ -21,8 +21,6 @@ WF counts per picture. Each picture must have a unique combination of
 experiment + replicate + plant + pic  
 experiment description consists of:  
 exp_year + exp_cross + exp_propagation + exp_substrate  
-
-
 ```{r}
 wf_file <- file.path(data_dir, "wf_consolidated.tab")
 wf <- read_wf(file = wf_file, sep = "\t",header=TRUE)
@@ -36,60 +34,8 @@ summary(wf_count$nymphs)
 
 ```
 
-What indicator should we use as resistance phenotype?
-Nymph counts are not normal 
-Error is not distributed normally.
-Nymph counts do not meet linear model assumptions (ANOVA, MapQTL).
-Best fit is a negative Binomial Distribution
+## Internal check analysis.
 
-## Probability density model fit to actual distribution
-```{r, warning=FALSE}
-wf_count_fit <-  count_fit(wf_count)
-
-plot_count_fit(wf_count_fit, main = "Nymphs")
-```
-
-## Reproducibility 
-
-Assume that nymphs per plant are distributed as negative binomial
-
-### Whole population.
-nymphs ~ experiment GLM, posthoc and common letter difference 
-
-```{r}
-by_experiment <- fit_nb_glm(nymphs ~ experiment, wf_count)
-
-```
-
-```{r}
-plot_fit_nb_glm(wf_count,by_experiment, type = "violin", cld = FALSE)
-```
-add infestation regime as factor 
-high,low: inferred from nyphs ~ experiment GLM
-
-```{r}
-wf_count$infestation <- "low"
-wf_count[wf_count$exp_year > 2016,]$infestation <- "high"
-wf_count$infestation <- factor(wf_count$infestation, levels =c("low","high"))
-```
-
-## Correlation  between experiments 
-
-```{r, fig.asp=1}
-
-cor_title <- paste("Geometric Means Correlation","Log Scale", sep = "\n")
-
-for (cross in levels(wf_count$exp_cross)) {
-  
-  wf_by_exp <- wf_wide(clone ~ experiment,
-                       wf_count[wf_count$exp_cross == cross,])
-  
-  plot_wide_cor(wf_by_exp, main = paste(cross,cor_title))
-  
-}
-```
-
-## Checks.
 ```{r, warning=FALSE}
 wf_check <- wf_count[grepl("internal_check", wf_count$group) &
                        wf_count$clone != "Secundina",]
@@ -101,6 +47,22 @@ checks_count_fit <-  count_fit(wf_check)
 plot_count_fit(checks_count_fit, main = "Nymphs")
 ```
 
+Assume that nymphs per plant are distributed as negative binomial
+
+```{r}
+by_experiment <- fit_nb_glm(nymphs ~ experiment, wf_check)
+
+plot_fit_nb_glm(wf_check,by_experiment, type = "violin", cld = FALSE)
+```
+add infestation regime as factor 
+high,low: inferred from nyphs ~ experiment GLM "see below"
+
+```{r}
+wf_check$infestation <- "low"
+wf_check[wf_check$exp_year > 2016,]$infestation <- "high"
+wf_check$infestation <- factor(wf_check$infestation, levels =c("low","high"))
+```
+
 
 ### Correlation  between experiments
 
@@ -109,6 +71,7 @@ check_by_exp <- wf_wide(clone ~ experiment, wf_check,
                         fun = function(x) log10(geometric_mean(x)) )
 plot_check_cor(check_by_exp, main = paste("Checks", cor_title))
 ```
+
 
 
 ```{r}
@@ -140,8 +103,59 @@ plot_gg_infestationXclone(posthoc)
 ```
 
 
+What indicator should we use as resistance phenotype?
+Nymph counts are not normal 
+Error is not distributed normally.
+Nymph counts do not meet linear model assumptions (ANOVA, MapQTL).
+Best fit is a negative Binomial Distribution
 
-# Nymph counts by Cross 
+## Whole population.
+
+### Probability density model fit to actual distribution
+```{r, warning=FALSE}
+wf_count_fit <-  count_fit(wf_count)
+
+plot_count_fit(wf_count_fit, main = "Nymphs")
+```
+
+### Reproducibility 
+
+Do insect counts change per experiment?
+
+nymphs ~ experiment GLM, posthoc and common letter difference 
+
+```{r}
+by_experiment <- fit_nb_glm(nymphs ~ experiment, wf_count)
+
+plot_fit_nb_glm(wf_count,by_experiment, type = "violin", cld = FALSE)
+```
+add infestation regime as factor 
+high,low: inferred from nyphs ~ experiment GLM "see below"
+
+```{r}
+wf_count$infestation <- "low"
+wf_count[wf_count$exp_year > 2016,]$infestation <- "high"
+wf_count$infestation <- factor(wf_count$infestation, levels =c("low","high"))
+```
+### Correlation  between experiments 
+
+```{r, fig.asp=1}
+
+cor_title <- paste("Geometric Means Correlation","Log Scale", sep = "\n")
+
+for (cross in levels(wf_count$exp_cross)) {
+  
+  wf_by_exp <- wf_wide(clone ~ experiment,
+                       wf_count[wf_count$exp_cross == cross,])
+  
+  plot_wide_cor(wf_by_exp, main = paste(cross,cor_title))
+  
+}
+```
+
+
+
+### Nymph counts by Cross 
 ```{r, fig.asp=1}
 exp_levels <- levels(as.factor(wf_count$experiment))
 exp_grp <- list(CM8996 = list(1,2,4,5),
