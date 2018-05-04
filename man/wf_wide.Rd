@@ -5,7 +5,7 @@
 \title{Vertical to horizontal data reformatting and aggregation for whitefly counts
 just a wrapper for \code{reshape2::dcast} from \code{reshape2}}
 \usage{
-wf_wide(formula, wf, fun = geometric.mean)
+wf_wide(formula, wf, fun = geometric_mean)
 }
 \arguments{
 \item{formula}{formula object specifiying the \code{reshape2::dcast} reformatting}

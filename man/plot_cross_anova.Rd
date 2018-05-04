@@ -20,5 +20,5 @@ Nothing
 Plot ANOVA per cross
 }
 \examples{
-# plot_cross.anova(posthoc, exp.allowed)
+# plot_cross.anova(posthoc, exp_allowed)
 }

@@ -5,7 +5,7 @@
 \title{Plot wide formated dataframe correlations per clone
 in log scale}
 \usage{
-plot_wide_cor(wf.wide, main = "Correlation", ...)
+plot_wide_cor(wf_wide, main = "Correlation", ...)
 }
 \arguments{
 \item{wf_wide}{wide formatted data by clone}

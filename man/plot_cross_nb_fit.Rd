@@ -4,7 +4,7 @@
 \alias{plot_cross_nb_fit}
 \title{Plot nb GLM per cross}
 \usage{
-plot_cross_nb_fit(posthoc, exp_allowed)
+plot_cross_nb_fit(posthoc, exp_allowed, breaks = NULL)
 }
 \arguments{
 \item{posthoc}{\code{multcomp} common letter display \code{cld} object from

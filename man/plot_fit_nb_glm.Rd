@@ -4,7 +4,7 @@
 \alias{plot_fit_nb_glm}
 \title{Plot negative binomial model fit}
 \usage{
-plot_fit_nb_glm(wf, nb_fitted, type = "CI", xmax = 15000)
+plot_fit_nb_glm(wf, nb_fitted, type = "violin", xmax = 15000, cld = TRUE)
 }
 \arguments{
 \item{wf}{A whitefly count dataframe.}

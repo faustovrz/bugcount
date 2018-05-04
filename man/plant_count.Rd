@@ -16,5 +16,5 @@ Dataframe containing whitefly counts per plant
 Counts per plant
 }
 \examples{
-# per.plant <- plant.count(my.wf)
+# per_plant <- plant.count(my_wf)
 }
